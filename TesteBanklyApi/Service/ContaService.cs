@@ -13,18 +13,13 @@ namespace TesteBanklyApi.Service
     public class ContaService : IContaService
     {
         private readonly ILogger<ContaService> _logger;
-        Queue<QueueObject> processingQueue { get; set; }
-        public string url = "https://acessoaccount.herokuapp.com/api/Account";
-        JobQueue job;
+        private Queue<QueueObject> processingQueue { get; set; }
         private int lastProcessed { get; set; }
         public ContaService(ILogger<ContaService> logger)
         {
             processingQueue = new Queue<QueueObject>();
             lastProcessed = 0;
             _logger = logger;
-
-
-
         }
 
         string[] Status = new[]
@@ -32,7 +27,6 @@ namespace TesteBanklyApi.Service
                 "In Queue", "Processing", "Confirmed", "Error"
             };
 
-        [DisableConcurrentExecution(timeoutInSeconds: 10 * 60)]
         public TransacaoResponse adicionarFila(TransferenciaDTO dto)
         {
             var queueObject = new QueueObject
@@ -48,7 +42,7 @@ namespace TesteBanklyApi.Service
             }
             processingQueue.Enqueue(queueObject);
             _logger.LogInformation("A transação de id " + queueObject.Id + " foi adicionada na fila");
-            RecurringJob.AddOrUpdate(() => processaFilaAsync(processingQueue, lastProcessed),Cron.Minutely);
+            //A transação foi adicionada na fila e vai ser processada pelo job que foi adicionado no startup.cs usando hangfire.
             return new TransacaoResponse { transactionId = queueObject.Id.ToString() };
 
 
@@ -57,6 +51,10 @@ namespace TesteBanklyApi.Service
         public void setLastProcessed(int processed)
         {
             this.lastProcessed = processed;
+        }
+        public int getLastProcessed()
+        {
+            return this.lastProcessed;
         }
 
         public void jobFila()
@@ -82,56 +80,16 @@ namespace TesteBanklyApi.Service
             }
             return null;
         }
-        [DisableConcurrentExecution(10 * 60)]
-        public async Task processaFilaAsync(Queue<QueueObject> queue, int processed)
+
+
+        public void setQueue(Queue<QueueObject> queue)
         {
+            this.processingQueue = queue;
+        }
 
-            if (queue.Count != 0)
-            {
-                for (int i = processed; i < queue.Count; i++)
-                {
-                    if (queue.ToArray()[i].status != "Error" || queue.ToArray()[i].status != "Confirmed")
-                    {
-
-                        using (var client = new HttpClient())
-                        {
-                            _logger.LogInformation("iniciando processamento do objeto da fila");
-                            queue.ToArray()[i].status = "Processing";
-
-                            try
-                            {
-                                var uri = new Uri(url);
-                                var jsonDebito = new TransferObject
-                                {
-                                    accountNumber = queue.ToArray()[i].transferenciaDTO.accountOrigin,
-                                    type = "Debit",
-                                    value = queue.ToArray()[i].transferenciaDTO.value
-                                };
-                                var jsonCredito = new TransferObject
-                                {
-                                    accountNumber = queue.ToArray()[i].transferenciaDTO.accountDestination,
-                                    type = "Credit",
-                                    value = queue.ToArray()[i].transferenciaDTO.value
-                                };
-                                var jsonDebitoSerialized = JsonSerializer.Serialize(jsonDebito);
-                                var jsonCreditoSerialized = JsonSerializer.Serialize(jsonCredito);
-                                var responseDebit = await client.PostAsync(uri, new StringContent(jsonDebitoSerialized, Encoding.UTF8, "application/json"));
-                                var responseCredit = await client.PostAsync(uri, new StringContent(jsonCreditoSerialized, Encoding.UTF8, "application/json"));
-                                processingQueue.ToArray()[i].status = "Confirmed";
-                                setLastProcessed(i);
-                                _logger.LogInformation("objeto processado com sucesso");
-                            }
-                            catch (Exception ex)
-                            {
-                                queue.ToArray()[i].status = "Error";
-                                queue.ToArray()[i].message = "Houve um erro ao se comunicar com o endpoint";
-                                _logger.LogInformation("objeto com erro");
-                            }
-                        }
-                    }
-
-                }
-            }
+        public Queue<QueueObject> getQueue()
+        {
+            return this.processingQueue;
         }
     }
 }

@@ -38,14 +38,14 @@ namespace TesteBanklyApi
 
             services.AddSingleton<IContaService, ContaService>();
             services.AddSingleton<IJobQueue, JobQueue>();
-             services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "TesteBanklyApi", Version = "v1" });
-            });
+            services.AddSwaggerGen(c =>
+           {
+               c.SwaggerDoc("v1", new OpenApiInfo { Title = "TesteBanklyApi", Version = "v1" });
+           });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IJobQueue jobQueue)
         {
             if (env.IsDevelopment())
             {
@@ -53,7 +53,7 @@ namespace TesteBanklyApi
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TesteBanklyApi v1"));
             }
-            
+
 
             app.UseHttpsRedirection();
 
@@ -64,8 +64,8 @@ namespace TesteBanklyApi
             app.UseHangfireServer();
 
             app.UseAuthorization();
-          
-
+            //Job que processa os itens da fila, ele roda a cada um minuto.
+            RecurringJob.AddOrUpdate(() => jobQueue.processaFilaAsync(), Cron.Minutely);
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

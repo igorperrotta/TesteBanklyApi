@@ -15,7 +15,7 @@ namespace TesteBanklyApi.Controllers
     {
         private readonly ILogger<ContaController> _logger;
         private readonly IContaService _contaService;
-        
+
         public ContaController(ILogger<ContaController> logger, IContaService contaService)
         {
             _logger = logger;
@@ -26,31 +26,26 @@ namespace TesteBanklyApi.Controllers
         [Route("/transacao")]
         public ActionResult<TransacaoResponse> transacaoConta([FromBody] TransferenciaDTO dto)
         {
-           
             _logger.LogInformation("Adicionando na fila");
             var retorno = _contaService.adicionarFila(dto);
             return Accepted(retorno);
-
-            
         }
 
         [HttpGet]
         [Route("/fila")]
         public ActionResult<ResponseDTO> transacaoConta(string transaciontId)
         {
-            if (transaciontId == null) 
+            if (transaciontId == null)
             {
                 return BadRequest();
             }
-            _logger.LogInformation("Buscando item na fila");
+            _logger.LogInformation("Buscando item na fila com id: " + transaciontId);
             var retorno = _contaService.acharFila(transaciontId);
-            if (retorno == null) 
+            if (retorno == null)
             {
                 return NotFound();
             }
             return Accepted(retorno);
-
-
         }
 
 

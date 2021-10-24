@@ -9,6 +9,8 @@ namespace TesteBanklyApi.Service
         public TransacaoResponse adicionarFila(TransferenciaDTO dto);
         public ResponseDTO acharFila(string id);
         public void setLastProcessed(int processed);
-        public  Task processaFilaAsync(Queue<QueueObject> queue,int processed);
+        public void setQueue(Queue<QueueObject> queue);
+        public Queue<QueueObject> getQueue();
+        public int getLastProcessed();
     }
 }
