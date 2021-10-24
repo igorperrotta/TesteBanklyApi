@@ -21,7 +21,7 @@ namespace TesteBanklyApi.Controllers
             _logger = logger;
             _contaService = contaService;
         }
-
+        //Endrpoint que faz a transação entre contas
         [HttpPost]
         [Route("/transacao")]
         public ActionResult<TransacaoResponse> transacaoConta([FromBody] TransferenciaDTO dto)
@@ -30,7 +30,7 @@ namespace TesteBanklyApi.Controllers
             var retorno = _contaService.adicionarFila(dto);
             return Accepted(retorno);
         }
-
+        //endpoint que retorna o status de intens na fila
         [HttpGet]
         [Route("/fila")]
         public ActionResult<ResponseDTO> transacaoConta(string transaciontId)
